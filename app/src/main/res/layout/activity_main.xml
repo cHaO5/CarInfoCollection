@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+    <ToggleButton
+            android:id="@+id/toggleButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:textOff="@string/button_off"
+            android:textOn="@string/button_on"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentTop="true"
+            android:background="@drawable/selector"
+            android:layout_marginTop="70dp"/>
+    <TextView
+            android:text="@string/speed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_alignParentStart="true"
+            android:layout_marginStart="103dp" android:layout_alignParentTop="true" android:layout_marginTop="146dp"
+            android:id="@+id/speed_text" android:layout_alignParentLeft="true" android:layout_marginLeft="103dp"/>
+    <TextView
+            android:text="@string/engine_rpm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_alignParentTop="true" android:layout_marginTop="187dp"
+            android:layout_alignStart="@+id/speed_text" android:id="@+id/engine_RPM_text"
+            android:layout_alignLeft="@+id/speed_text"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_marginEnd="103dp"
+            android:layout_alignTop="@+id/speed_text" android:id="@+id/speed"
+            android:layout_alignParentRight="true" android:layout_marginRight="103dp"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_alignEnd="@+id/speed"
+            android:layout_alignTop="@+id/engine_RPM_text" android:id="@+id/engine_RPM"
+            android:layout_alignRight="@+id/speed"/>
+
+</RelativeLayout>
