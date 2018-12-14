@@ -1,6 +1,4 @@
-/*
- * TODO put header
- */
+
 package com.saic.quentin.carinfocollection.commands;
 
 import com.saic.quentin.carinfocollection.enums.AvailableCommandNames;

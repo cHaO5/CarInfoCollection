@@ -30,7 +30,6 @@ public class TimeoutObdCommand extends ObdCommand {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see eu.lighthouselabs.MyCommand.commands.ObdCommand#getFormattedResult()
 	 */
 	@Override
 	public String getFormattedResult() {

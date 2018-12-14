@@ -1,6 +1,4 @@
-/*
- * TODO put header
- */
+
 package com.saic.quentin.carinfocollection.reader.activity;
 
 import java.util.ArrayList;
@@ -31,17 +29,9 @@ public class ConfigActivity extends PreferenceActivity implements
 		OnPreferenceChangeListener {
 
 	public static final String BLUETOOTH_LIST_KEY = "bluetooth_list_preference";
-	public static final String UPLOAD_URL_KEY = "upload_url_preference";
-	public static final String UPLOAD_DATA_KEY = "upload_data_preference";
 	public static final String UPDATE_PERIOD_KEY = "update_period_preference";
-	public static final String VEHICLE_ID_KEY = "vehicle_id_preference";
-	public static final String ENGINE_DISPLACEMENT_KEY = "engine_displacement_preference";
-	public static final String VOLUMETRIC_EFFICIENCY_KEY = "volumetric_efficiency_preference";
 	public static final String IMPERIAL_UNITS_KEY = "imperial_units_preference";
 	public static final String COMMANDS_SCREEN_KEY = "obd_commands_screen";
-	public static final String ENABLE_GPS_KEY = "enable_gps_preference";
-	public static final String MAX_FUEL_ECON_KEY = "max_fuel_econ_preference";
-	public static final String CONFIG_READER_KEY = "reader_config_preference";
 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -65,7 +55,6 @@ public class ConfigActivity extends PreferenceActivity implements
 		/*
 		 * Available OBD commands
 		 * 
-		 * TODO This should be read from preferences database
 		 */
 		ArrayList<ObdCommand> cmds = ObdConfig.getCommands();
 		PreferenceScreen cmdScr = (PreferenceScreen) getPreferenceScreen()
@@ -99,7 +88,6 @@ public class ConfigActivity extends PreferenceActivity implements
 		/*
 		 * Listen for preferences click.
 		 * 
-		 * TODO there are so many repeated validations :-/
 		 */
 		final Activity thisActivity = this;
 		listBtDevices.setEntries(new CharSequence[1]);
@@ -135,15 +123,7 @@ public class ConfigActivity extends PreferenceActivity implements
 		listBtDevices.setEntryValues(vals.toArray(new CharSequence[0]));
 	}
 
-	/**
-	 * OnPreferenceChangeListener method that will validate a preferencen new
-	 * value when it's changed.
-	 * 
-	 * @param preference
-	 *            the changed preference
-	 * @param newValue
-	 *            the value to be validated and set if valid
-	 */
+
 	public boolean onPreferenceChange(Preference preference, Object newValue) {
 		if (UPDATE_PERIOD_KEY.equals(preference.getKey())) {
 			try {
@@ -159,11 +139,7 @@ public class ConfigActivity extends PreferenceActivity implements
 		return false;
 	}
 
-	/**
-	 * 
-	 * @param prefs
-	 * @return
-	 */
+
 	public static int getUpdatePeriod(SharedPreferences prefs) {
 		String periodString = prefs.getString(ConfigActivity.UPDATE_PERIOD_KEY,
 				"1"); // 1 as in seconds
@@ -181,43 +157,8 @@ public class ConfigActivity extends PreferenceActivity implements
 		return period;
 	}
 
-	/**
-	 * 
-	 * @param prefs
-	 * @return
-	 */
-//	public static double getVolumetricEfficieny(SharedPreferences prefs) {
-//		String veString = prefs.getString(
-//				ConfigActivity.VOLUMETRIC_EFFICIENCY_KEY, ".85");
-//		double ve = 0.85;
-//		try {
-//			ve = Double.parseDouble(veString);
-//		} catch (Exception e) {
-//		}
-//		return ve;
-//	}
 
-	/**
-	 * 
-	 * @param prefs
-	 * @return
-	 */
-//	public static double getEngineDisplacement(SharedPreferences prefs) {
-//		String edString = prefs.getString(
-//				ConfigActivity.ENGINE_DISPLACEMENT_KEY, "1.6");
-//		double ed = 1.6;
-//		try {
-//			ed = Double.parseDouble(edString);
-//		} catch (Exception e) {
-//		}
-//		return ed;
-//	}
 
-	/**
-	 * 
-	 * @param prefs
-	 * @return
-	 */
 	public static ArrayList<ObdCommand> getObdCommands(SharedPreferences prefs) {
 		ArrayList<ObdCommand> cmds = ObdConfig.getCommands();
 		ArrayList<ObdCommand> ucmds = new ArrayList<ObdCommand>();
@@ -230,31 +171,4 @@ public class ConfigActivity extends PreferenceActivity implements
 		}
 		return ucmds;
 	}
-
-	/**
-	 * 
-	 * @param prefs
-	 * @return
-	 */
-//	public static double getMaxFuelEconomy(SharedPreferences prefs) {
-//		String maxStr = prefs.getString(ConfigActivity.MAX_FUEL_ECON_KEY, "70");
-//		double max = 70;
-//		try {
-//			max = Double.parseDouble(maxStr);
-//		} catch (Exception e) {
-//		}
-//		return max;
-//	}
-
-	/**
-	 * 
-	 * @param prefs
-	 * @return
-	 */
-//	public static String[] getReaderConfigCommands(SharedPreferences prefs) {
-//		String cmdsStr = prefs.getString(CONFIG_READER_KEY, "atsp0\natz");
-//		String[] cmds = cmdsStr.split("\n");
-//		return cmds;
-//	}
-	
 }

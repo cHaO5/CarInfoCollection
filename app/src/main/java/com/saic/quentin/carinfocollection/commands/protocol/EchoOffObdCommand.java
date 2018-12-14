@@ -1,6 +1,4 @@
-/*
- * TODO put header
- */
+
 package com.saic.quentin.carinfocollection.commands.protocol;
 
 import com.saic.quentin.carinfocollection.commands.ObdCommand;
@@ -27,7 +25,6 @@ public class EchoOffObdCommand extends ObdCommand {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see eu.lighthouselabs.MyCommand.commands.ObdCommand#getFormattedResult()
 	 */
 	@Override
 	public String getFormattedResult() {

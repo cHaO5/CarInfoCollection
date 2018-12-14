@@ -1,11 +1,6 @@
-/*
- * TODO put header
- */
+
 package com.saic.quentin.carinfocollection.enums;
 
-/**
- * TODO put description
- */
 public enum AvailableCommandNames {
 	AIR_INTAKE_TEMP("Air Intake Temperature"),
 	AMBIENT_AIR_TEMP("Ambient Air Temperature"),

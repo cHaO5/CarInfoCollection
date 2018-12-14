@@ -1,6 +1,4 @@
-/*
- * TODO put header
- */
+
 
 package com.saic.quentin.carinfocollection.commands;
 
@@ -109,7 +107,6 @@ public abstract class ObdCommand {
 	/**
 	 * Reads the OBD-II response.
 	 * 
-	 * This method may be overriden in subclasses, such as ObdMultiCommand.
 	 */
 	protected void readResult(InputStream in) throws IOException {
 		byte b = 0;

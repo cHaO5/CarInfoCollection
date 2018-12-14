@@ -1,6 +1,4 @@
-/*
- * TODO put header
- */
+
 package com.saic.quentin.carinfocollection.reader.io;
 
 import java.io.IOException;
@@ -36,7 +34,6 @@ import com.saic.quentin.carinfocollection.commands.protocol.LineFeedOffObdComman
 import com.saic.quentin.carinfocollection.commands.protocol.ObdResetCommand;
 import com.saic.quentin.carinfocollection.commands.protocol.SelectProtocolObdCommand;
 import com.saic.quentin.carinfocollection.commands.protocol.TimeoutObdCommand;
-//import com.saic.quentin.carinfocollection.commands.temperature.AmbientAirTemperatureObdCommand;
 import com.saic.quentin.carinfocollection.enums.ObdProtocols;
 import com.saic.quentin.carinfocollection.reader.IPostListener;
 import com.saic.quentin.carinfocollection.reader.IPostMonitor;
@@ -91,8 +88,6 @@ public class ObdGatewayService extends Service {
 
 	@Override
 	public void onCreate() {
-//		_notifManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-//		showNotification();
 		Log.d(TAG, "Service create");
 	}
 
@@ -138,38 +133,14 @@ public class ObdGatewayService extends Service {
 			// log error
 			Log.e(TAG, "No Bluetooth device selected");
 
-			// TODO kill this service gracefully
 			stopService();
 		}
 
 		final BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
 		_dev = btAdapter.getRemoteDevice(remoteDevice);
 
-		/*
-		 * TODO put this as deprecated Determine if upload is enabled
-		 */
-		// boolean uploadEnabled = prefs.getBoolean(
-		// ConfigActivity.UPLOAD_DATA_KEY, false);
-		// String uploadUrl = null;
-		// if (uploadEnabled) {
-		// uploadUrl = prefs.getString(ConfigActivity.UPLOAD_URL_KEY,
-		// null);
-		// }
 
-		/*
-		 * Get GPS
-		 */
-//		LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-//		boolean gps = prefs.getBoolean(ConfigActivity.ENABLE_GPS_KEY, false);
-
-		/*
-		 * TODO 采样间隔未使用
-		 * 
-		 * Get more preferences
-		 */
 		int period = ConfigActivity.getUpdatePeriod(prefs);
-//		double ve = ConfigActivity.getVolumetricEfficieny(prefs);
-//		double ed = ConfigActivity.getEngineDisplacement(prefs);
 		boolean imperialUnits = prefs.getBoolean(
 		        ConfigActivity.IMPERIAL_UNITS_KEY, false);
 		ArrayList<ObdCommand> cmds = ConfigActivity.getObdCommands(prefs);
@@ -213,8 +184,6 @@ public class ObdGatewayService extends Service {
 	private void startObdConnection() throws IOException {
 		Log.d(TAG, "Start OBD connection...");
 
-		// Instantiate a BluetoothSocket for the remote device and connect it.
-//		_sock = _dev.createRfcommSocketToServiceRecord(MY_UUID);
 		int sdk = Build.VERSION.SDK_INT;
 
 		if (sdk >= 10) {
@@ -223,43 +192,6 @@ public class ObdGatewayService extends Service {
 			_sock = _dev.createRfcommSocketToServiceRecord(MY_UUID);
 		}
 
-//		try {
-//			_sock.connect();
-//			Log.e("","Connected");
-//		} catch (IOException e) {
-//			Log.e("",e.getMessage());
-//			try {
-//				Log.e("","trying fallback...");
-//
-//				_sock =(BluetoothSocket) _dev.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(_dev,1);
-//				_sock.connect();
-//
-//				Log.e("","Connected");
-//			}
-//			catch (Exception e2) {
-//				Log.e("", "Couldn't establish Bluetooth connection!");
-//			}
-//		}
-
-//		BluetoothSocket sockFallback = null;
-//		try {
-//			_sock = _dev.createRfcommSocketToServiceRecord(MY_UUID);
-//			_sock.connect();
-//		} catch (Exception e1) {
-//			Log.e(TAG, "There was an error while establishing Bluetooth connection. Falling back..", e1);
-//			Class<?> clazz = _sock.getRemoteDevice().getClass();
-//			Class<?>[] paramTypes = new Class<?>[]{Integer.TYPE};
-//			try {
-//				Method m = clazz.getMethod("createRfcommSocket", paramTypes);
-//				Object[] params = new Object[]{Integer.valueOf(1)};
-//				sockFallback = (BluetoothSocket) m.invoke(_sock.getRemoteDevice(), params);
-//				sockFallback.connect();
-//				_sock = sockFallback;
-//			} catch (Exception e2) {
-//				Log.e(TAG, "Couldn't fallback while establishing Bluetooth connection.", e2);
-//				throw new IOException(e2.getMessage());
-//			}
-//		}
 
 		Log.d(TAG, "Now connecting sock..");
 		_sock.connect();
@@ -378,7 +310,9 @@ public class ObdGatewayService extends Service {
 			if (_dev == null) {
 				Log.d(TAG, "dev is null");
 			}
-			_sock.close();
+			if (_sock != null) {
+				_sock.close();
+			}
 		} catch (IOException e) {
 			Log.e(TAG, e.getMessage());
 		}
@@ -387,39 +321,6 @@ public class ObdGatewayService extends Service {
 		stopSelf();
 	}
 
-	/**
-	 * Show a notification while this service is running.
-	 */
-	private void showNotification() {
-		// Set the icon, scrolling text and timestamp
-//		Notification notification = new Notification(R.drawable.icon,
-//		        getText(R.string.service_started), System.currentTimeMillis());
-		Notification notification;
-
-		// Launch our activity if the user selects this notification
-		PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
-		        new Intent(this, MainActivity.class), 0);
-
-		// Set the info for the views that show in the notification panel.
-//		notification.setLatestEventInfo(this,
-//		        getText(R.string.notification_label),
-//		        getText(R.string.service_started), contentIntent);
-
-		Notification.Builder builder = new Notification.Builder(this);
-		builder.setContentText("Tap to open OBD-Reader.");
-		builder.setContentText("OBD connection has started.");
-		builder.setContentIntent(contentIntent);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-			builder.build();
-		}
-
-		notification = builder.getNotification();
-
-
-
-		// Send the notification.
-//		_notifManager.notify(R.string.service_started, notification);
-	}
 
 	/**
 	 * Clear notification.

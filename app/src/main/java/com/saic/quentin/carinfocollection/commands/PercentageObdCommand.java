@@ -1,6 +1,4 @@
-/*
- * TODO put header
- */
+
 package com.saic.quentin.carinfocollection.commands;
 
 /**
@@ -13,7 +11,6 @@ public abstract class PercentageObdCommand extends ObdCommand {
 	 */
 	public PercentageObdCommand(String command) {
 		super(command);
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
@@ -21,7 +18,6 @@ public abstract class PercentageObdCommand extends ObdCommand {
 	 */
 	public PercentageObdCommand(ObdCommand other) {
 		super(other);
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
