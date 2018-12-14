@@ -4,6 +4,8 @@
 package com.saic.quentin.carinfocollection.reader.activity;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -18,9 +20,10 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.LocationManager;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.PowerManager;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
+import android.os.*;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -29,6 +32,7 @@ import android.view.ViewGroup.LayoutParams;
 import android.view.ViewGroup.MarginLayoutParams;
 import android.widget.*;
 import com.example.MyCommand;
+import com.saic.quentin.carinfocollection.commands.AmbientAirTemperatureObdCommand;
 import com.saic.quentin.carinfocollection.commands.SpeedObdCommand;
 import com.saic.quentin.carinfocollection.commands.control.CommandEquivRatioObdCommand;
 import com.saic.quentin.carinfocollection.commands.engine.EngineRPMObdCommand;
@@ -47,7 +51,12 @@ import com.saic.quentin.carinfocollection.reader.io.ObdCommandJob;
 import com.saic.quentin.carinfocollection.reader.io.ObdGatewayService;
 import com.saic.quentin.carinfocollection.reader.io.ObdGatewayServiceConnection;
 import android.support.v7.widget.Toolbar;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Structure;
 import org.w3c.dom.Text;
+
+import static android.media.AudioTrack.MODE_STREAM;
 
 /**
  * The main activity.
@@ -61,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
 	 */
 	static final int NO_BLUETOOTH_ID = 0;
 	static final int BLUETOOTH_DISABLED = 1;
-//	static final int NO_GPS_ID = 2;
+	//	static final int NO_GPS_ID = 2;
 	static final int START_LIVE_DATA = 3;
 	static final int STOP_LIVE_DATA = 4;
 	static final int SETTINGS = 5;
@@ -92,39 +101,16 @@ public class MainActivity extends AppCompatActivity {
 	private float ltft = 0;
 	private double equivRatio = 1;
 
-//    private EditText commandText;
-    private TextView resultText;
+	//    private EditText commandText;
+	private TextView resultText;
 //    private Button sendButton;
 
-	private final SensorEventListener orientListener = new SensorEventListener() {
-		public void onSensorChanged(SensorEvent event) {
-			float x = event.values[0];
-			String dir = "";
-			if (x >= 337.5 || x < 22.5) {
-				dir = "N";
-			} else if (x >= 22.5 && x < 67.5) {
-				dir = "NE";
-			} else if (x >= 67.5 && x < 112.5) {
-				dir = "E";
-			} else if (x >= 112.5 && x < 157.5) {
-				dir = "SE";
-			} else if (x >= 157.5 && x < 202.5) {
-				dir = "S";
-			} else if (x >= 202.5 && x < 247.5) {
-				dir = "SW";
-			} else if (x >= 247.5 && x < 292.5) {
-				dir = "W";
-			} else if (x >= 292.5 && x < 337.5) {
-				dir = "NW";
-			}
-//			TextView compass = (TextView) findViewById(R.id.compass_text);
-//			updateTextView(compass, dir);
-		}
+	private AudioTrack player;
+	private short[] buf;
+	Data data;
+	private ExecutorService mExecutorService;
+	private int period = 1000;
 
-		public void onAccuracyChanged(Sensor sensor, int accuracy) {
-			// TODO Auto-generated method stub
-		}
-	};
 
 	public void updateTextView(final TextView view, final String txt) {
 		new Handler().post(new Runnable() {
@@ -140,12 +126,16 @@ public class MainActivity extends AppCompatActivity {
 
 		/*
 		 * TODO clean-up this upload thing
-		 * 
+		 *
 		 * ExceptionHandler.register(this,
 		 * "http://www.whidbeycleaning.com/droid/server.php");
 		 */
 		setContentView(R.layout.main);
 //		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+
+		// JNA
+		mExecutorService = Executors.newSingleThreadExecutor();
+		data = new Data();
 
 		ToggleButton mToggleButton = (ToggleButton) findViewById(R.id.toggleButton);
 		mToggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -156,17 +146,43 @@ public class MainActivity extends AppCompatActivity {
 //					Toast.makeText(getApplication(), "Service is not running", Toast.LENGTH_LONG).show();
 //					startService(mServiceIntent);
 //				} else {
-					if(!isChecked){
-						Toast.makeText(getApplication(), "Start", Toast.LENGTH_LONG).show();
-						startLiveData();
-					}else {
-						Toast.makeText(getApplication(), "Stop", Toast.LENGTH_LONG).show();
-						stopLiveData();
+				if (!isChecked) {
+					Toast.makeText(getApplication(), "Start", Toast.LENGTH_SHORT).show();
+//					startLiveData();
+					startAudio();
+
+					for (int i = 0; i < 200; ++i) {
+						int tempRpm = 5 * i + 4000;
+//						int tempRpm = (int) (Math.random() * 6000 + 2000);
+						// 0~2000
+//						int tempRpm = (int) (Math.random() * 2000 + 0);
+						// 2001~4000
+//						int tempRpm = (int) (Math.random() * 2000 + 2000);
+						// 4001~6000
+//						int tempRpm = (int) (Math.random() * 2000 + 4000);
+						//6001~8000
+//						int tempRpm = (int) (Math.random() * 2000 + 5800);
+						genAudio(tempRpm);
 					}
+					stopAudio();
+//					isChecked = false;
+				} else {
+					Toast.makeText(getApplication(), "Stop", Toast.LENGTH_SHORT).show();
+					stopAudio();
+//					stopLiveData();
 				}
+
+//				if (isChecked) {
+//					isChecked = false;
+//				} else {
+//					isChecked = true;
+//				}
+			}
 
 //			}
 		});
+
+
 
 		Button button = (Button) findViewById(R.id.config);
 		button.setOnClickListener(new View.OnClickListener() {
@@ -175,6 +191,8 @@ public class MainActivity extends AppCompatActivity {
 				updateConfig();
 			}
 		});
+
+
 
 
 //		setSupportActionBar(toolbar);
@@ -210,15 +228,20 @@ public class MainActivity extends AppCompatActivity {
 //					TextView tvRpm = (TextView) findViewById(R.id.rpm_text);
 //					tvRpm.setText(cmdResult);
 					TextView engine_rpm_value = (TextView) findViewById(R.id.engine_rpm_value);
+					Log.d(TAG, cmdResult + "r/m");
 					engine_rpm_value.setText(cmdResult);
+
+					int s = Integer.valueOf(cmdResult.substring(0, cmdResult.length() - 4));
+					genAudio(s);
 				} else if (AvailableCommandNames.SPEED.getValue().equals(
 						cmdName)) {
 //					TextView tvSpeed = (TextView) findViewById(R.id.spd_text);
 //					tvSpeed.setText(cmdResult);
 					TextView speed_value = (TextView) findViewById(R.id.speed_value);
-					speed_value.setText(cmdResult);
 					speed = ((SpeedObdCommand) job.getCommand())
 							.getMetricSpeed();
+					Log.d(TAG, cmdResult + " speed: " + speed);
+					speed_value.setText(cmdResult);
 //				} else if (AvailableCommandNames.MAF.getValue().equals(cmdName)) {
 //					maf = ((MassAirFlowObdCommand) job.getCommand()).getMAF();
 //					addTableRow(cmdName, cmdResult);
@@ -276,7 +299,6 @@ public class MainActivity extends AppCompatActivity {
 
 		// validate app pre-requisites
 		if (preRequisites) {
-			System.out.println("00000000000000000000000000000000");
 			/*
 			 * Prepare service and its connection
 			 */
@@ -288,9 +310,6 @@ public class MainActivity extends AppCompatActivity {
 			Log.d(TAG, "Binding service..");
 			bindService(mServiceIntent, mServiceConnection,
 					Context.BIND_AUTO_CREATE);
-
-
-
 
 
 //			startService(mServiceIntent);
@@ -330,9 +349,11 @@ public class MainActivity extends AppCompatActivity {
 
 		Log.d(TAG, "Resuming..");
 
-		sensorManager.registerListener(orientListener, orientSensor,
-				SensorManager.SENSOR_DELAY_UI);
+//		sensorManager.registerListener(orientListener, orientSensor,
+//				SensorManager.SENSOR_DELAY_UI);
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		// TODO
+		period = Integer.valueOf(prefs.getString(ConfigActivity.UPDATE_PERIOD_KEY, "1000"));
 		powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
 		wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK,
 				"ObdReader");
@@ -345,6 +366,7 @@ public class MainActivity extends AppCompatActivity {
 		Intent configIntent = new Intent(this, ConfigActivity.class);
 		startActivity(configIntent);
 	}
+
 
 //	public boolean onCreateOptionsMenu(Menu menu) {
 //		getMenuInflater().inflate(R.menu.toolbar, menu);
@@ -375,9 +397,9 @@ public class MainActivity extends AppCompatActivity {
 //		case SETTINGS:
 //			updateConfig();
 //			return true;
-			// case COMMAND_ACTIVITY:
-			// staticCommand();
-			// return true;
+	// case COMMAND_ACTIVITY:
+	// staticCommand();
+	// return true;
 //		}
 //		return false;
 //	}
@@ -414,26 +436,227 @@ public class MainActivity extends AppCompatActivity {
 		releaseWakeLockIfHeld();
 	}
 
+	private void startAudio() {
+		Log.d("AudioPlayer", "Init audio processing...");
+
+		JNATest.INSTANCE.signal_proc_init(data);
+
+//		for (int i = 0; i < 100; i++) {
+//			data.carstatus.fRpm = (int) (Math.random() * 6000 + 2000);
+//			System.out.println(data.carstatus.fRpm);
+//			JNATest.INSTANCE.signal_proc(data);
+//			buf = data.buf_out.clone();
+////						Message msg = Message.obtain(mHandler);
+////						msg.obj = data.carstatus.fRpm;
+////						mHandler.sendMessage(msg);
+//			Log.d("AudioPlayer", "Start to play...");
+//			mExecutorService.submit(new Runnable() {
+//				@Override
+//				public void run() {
+//					playAudio();
+//				}
+//			});
+//		}
+
+//		mExecutorService.submit(new Runnable() {
+//			@Override
+//			public void run() {
+//				playAudio();
+//			}
+//		});
+
+	}
+
+	private void stopAudio() {
+		if (player != null && player.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
+			Log.d("AudioPlayer", "Player is stopping...");
+			player.stop();
+			player.release();
+		}
+	}
+
 	protected Dialog onCreateDialog(int id) {
 		AlertDialog.Builder build = new AlertDialog.Builder(this);
 		switch (id) {
-		case NO_BLUETOOTH_ID:
-			build.setMessage("Sorry, your device doesn't support Bluetooth.");
-			return build.create();
-		case BLUETOOTH_DISABLED:
-			build.setMessage("You have Bluetooth disabled. Please enable it!");
-			return build.create();
+			case NO_BLUETOOTH_ID:
+				build.setMessage("Sorry, your device doesn't support Bluetooth.");
+				return build.create();
+			case BLUETOOTH_DISABLED:
+				build.setMessage("You have Bluetooth disabled. Please enable it!");
+				return build.create();
 //		case NO_GPS_ID:
-//			build.setMessage("Sorry, your device doesn't support GPS.");
+//			build.setMessage("Sorry, your device doesn't support GPS.");e
 //			return build.create();
-		case NO_ORIENTATION_SENSOR:
-			build.setMessage("Orientation sensor missing?");
-			return build.create();
+			case NO_ORIENTATION_SENSOR:
+				build.setMessage("Orientation sensor missing?");
+				return build.create();
 		}
 		return null;
 	}
 
-//	public boolean onPrepareOptionsMenu(Menu menu) {
+
+	/**
+	 *
+	 */
+	private Runnable mQueueCommands = new Runnable() {
+		public void run() {
+			/*
+			 * If values are not default, then we have values to calculate MPG
+			 */
+//			Log.d(TAG, "SPD:" + speed + ", MAF:" + maf + ", LTFT:" + ltft);
+//			if (speed > 1 && maf > 1 && ltft != 0) {
+//				FuelEconomyWithMAFObdCommand fuelEconCmd = new FuelEconomyWithMAFObdCommand(
+//						FuelType.DIESEL, speed, maf, ltft, false /* TODO */);
+//				TextView tvMpg = (TextView) findViewById(R.id.fuel_econ_text);
+//				tvMpg.setText("mQueueCommands");
+//				String liters100km = String.format("%.2f", fuelEconCmd.getLitersPer100Km());
+//				tvMpg.setText("" + liters100km);
+////				Log.d(TAG, "FUELECON:" + liters100km);
+//			}
+
+			if (mServiceConnection.isRunning())
+				queueCommands();
+
+			Log.d(TAG, "period is : " + period);
+			// run again in 2s
+
+			period = 100;
+
+			mHandler.postDelayed(mQueueCommands, period);
+		}
+	};
+
+	/**
+	 *
+	 */
+	private void queueCommands() {
+		final ObdCommandJob airTemp = new ObdCommandJob(
+				new AmbientAirTemperatureObdCommand());
+		final ObdCommandJob speed = new ObdCommandJob(new SpeedObdCommand());
+		final ObdCommandJob rpm = new ObdCommandJob(new EngineRPMObdCommand());
+
+		mServiceConnection.addJobToQueue(airTemp);
+		mServiceConnection.addJobToQueue(speed);
+		mServiceConnection.addJobToQueue(rpm);
+	}
+
+
+	private void genAudio(float rpm) {
+		data.carstatus.fRpm = rpm;
+		Log.d(TAG, Float.toString(data.carstatus.fRpm));
+		JNATest.INSTANCE.signal_proc(data);
+		buf = data.buf_out.clone();
+//						Message msg = Message.obtain(mHandler);
+//						msg.obj = data.carstatus.fRpm;
+//						mHandler.sendMessage(msg);
+		Log.d("AudioPlayer", "Audio is generated.");
+		mExecutorService.submit(new Runnable() {
+			@Override
+			public void run() {
+				playAudio();
+			}
+		});
+	}
+
+	//TODO player是否要每次都Play（）
+	private void playAudio() {
+		int sampleRateInHz = 48000;
+		int channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
+		int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+		int minBufferSize = AudioTrack.getMinBufferSize(sampleRateInHz, channelConfig, audioFormat);
+
+		//实测length参数很重要，太大或者大小都有可能导致异常：play() called on uninitialized AudioTrack
+//            int length = (int) audioFile.length();
+		int length = minBufferSize + 1024;
+//            byte bytes[] = new byte[length];
+		if (player == null) {
+			Log.d("Audio", "Player is not ready.");
+			if (Build.VERSION.SDK_INT >= 23) {
+
+				player = new AudioTrack.Builder().
+						setAudioFormat(new AudioFormat.Builder()
+								.setEncoding(audioFormat)
+								.setSampleRate(sampleRateInHz)
+								.setChannelMask(channelConfig)
+								.build())
+						.setBufferSizeInBytes(length)
+						.build();
+
+				Log.d("Audio", "Now player is ready...");
+			} else {
+				player = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRateInHz,
+						channelConfig, audioFormat,
+						length, MODE_STREAM);
+
+				Log.d("Audio", "Now player is ready...");
+			}
+		}
+//        data.write();
+
+
+		Log.d("AudioPlayer", "Playing...");
+		player.write(buf, 0, length);
+		player.play();
+//		player.setPlaybackRate(60);
+
+//        }
+	}
+
+	interface JNATest extends Library {
+		JNATest INSTANCE = (JNATest) Native.loadLibrary("audio", JNATest.class);
+
+		//        public Pointer GenerateAudioStereo(float fRpms, Pointer p);
+		public void signal_proc_init(Data data);
+		public void signal_proc(Data pData);
+
+	}
+
+	public static class CarStatus extends Structure {
+		private static final List<String> FIELDS_ORDER = createFieldsOrder("fRpm", "nPedal", "nVelocity");
+		public float fRpm;
+		public int nPedal;
+		public int nVelocity;
+		public static class ByReference extends CarStatus implements Structure.ByReference {}
+		public static class ByValue extends CarStatus implements Structure.ByValue {}
+
+		@Override
+		protected List<String> getFieldOrder() {
+			return FIELDS_ORDER;
+		}
+	}
+
+	public static class AudioPara extends Structure {
+		private static final List<String> FIELDS_ORDER = createFieldsOrder("nNumbers", "pOrders", "pRpms",
+				"pAmpVsRpms", "pInitPhases");
+		public int[] nNumbers = new int[5];
+		public float[] pOrders = new float[40];
+		public float[] pRpms = new float[129];
+		public float[] pAmpVsRpms = new float[40 * 129];
+		public float[] pInitPhases = new float[40];
+		public static class ByReference extends AudioPara implements Structure.ByReference {}
+		public static class ByValue extends AudioPara implements Structure.ByValue {}
+
+		@Override
+		protected List<String> getFieldOrder() {
+			return FIELDS_ORDER;
+		}
+	}
+
+	public static class Data extends Structure {
+		private static final List<String> FIELDS_ORDER = createFieldsOrder("audiopara", "carstatus", "buf_out");
+		public AudioPara audiopara = new AudioPara();
+		public CarStatus carstatus = new CarStatus();
+		public short[] buf_out = new short[960 * 20];
+		public static class ByReference extends AudioPara implements Structure.ByReference {}
+		public static class ByValue extends AudioPara implements Structure.ByValue {}
+
+		@Override
+		protected List<String> getFieldOrder() {
+			return FIELDS_ORDER;
+		}
+	}
+
+	//	public boolean onPrepareOptionsMenu(Menu menu) {
 //		MenuItem startItem = menu.findItem(START_LIVE_DATA);
 //		MenuItem stopItem = menu.findItem(STOP_LIVE_DATA);
 //		MenuItem settingsItem = menu.findItem(SETTINGS);
@@ -490,68 +713,4 @@ public class MainActivity extends AppCompatActivity {
 //		if (tl.getChildCount() > 10)
 //			tl.removeViewAt(0);
 //	}
-
-	/**
-	 * 
-	 */
-	private Runnable mQueueCommands = new Runnable() {
-		public void run() {
-			/*
-			 * If values are not default, then we have values to calculate MPG
-			 */
-//			Log.d(TAG, "SPD:" + speed + ", MAF:" + maf + ", LTFT:" + ltft);
-//			if (speed > 1 && maf > 1 && ltft != 0) {
-//				FuelEconomyWithMAFObdCommand fuelEconCmd = new FuelEconomyWithMAFObdCommand(
-//						FuelType.DIESEL, speed, maf, ltft, false /* TODO */);
-//				TextView tvMpg = (TextView) findViewById(R.id.fuel_econ_text);
-//				tvMpg.setText("mQueueCommands");
-//				String liters100km = String.format("%.2f", fuelEconCmd.getLitersPer100Km());
-//				tvMpg.setText("" + liters100km);
-////				Log.d(TAG, "FUELECON:" + liters100km);
-//			}
-
-			if (mServiceConnection.isRunning())
-				queueCommands();
-
-			// run again in 2s
-			mHandler.postDelayed(mQueueCommands, 2000);
-		}
-	};
-
-	/**
-	 * 
-	 */
-	private void queueCommands() {
-//		final ObdCommandJob airTemp = new ObdCommandJob(
-//				new AmbientAirTemperatureObdCommand());
-		final ObdCommandJob speed = new ObdCommandJob(new SpeedObdCommand());
-//		final ObdCommandJob fuelEcon = new ObdCommandJob(
-//				new FuelEconomyObdCommand());
-		final ObdCommandJob rpm = new ObdCommandJob(new EngineRPMObdCommand());
-//		final ObdCommandJob maf = new ObdCommandJob(new MassAirFlowObdCommand());
-//		final ObdCommandJob fuelLevel = new ObdCommandJob(
-//				new FuelLevelObdCommand());
-//		final ObdCommandJob ltft1 = new ObdCommandJob(new FuelTrimObdCommand(
-//				FuelTrim.LONG_TERM_BANK_1));
-//		final ObdCommandJob ltft2 = new ObdCommandJob(new FuelTrimObdCommand(
-//				FuelTrim.LONG_TERM_BANK_2));
-//		final ObdCommandJob stft1 = new ObdCommandJob(new FuelTrimObdCommand(
-//				FuelTrim.SHORT_TERM_BANK_1));
-//		final ObdCommandJob stft2 = new ObdCommandJob(new FuelTrimObdCommand(
-//				FuelTrim.SHORT_TERM_BANK_2));
-//		final ObdCommandJob equiv = new ObdCommandJob(new CommandEquivRatioObdCommand());
-
-		// mServiceConnection.addJobToQueue(airTemp);
-		mServiceConnection.addJobToQueue(speed);
-		// mServiceConnection.addJobToQueue(fuelEcon);
-		mServiceConnection.addJobToQueue(rpm);
-//		mServiceConnection.addJobToQueue(maf);
-//		mServiceConnection.addJobToQueue(fuelLevel);
-//		mServiceConnection.addJobToQueue(equiv);
-//		mServiceConnection.addJobToQueue(ltft1);
-		// mServiceConnection.addJobToQueue(ltft2);
-		// mServiceConnection.addJobToQueue(stft1);
-		// mServiceConnection.addJobToQueue(stft2);
-
-	}
 }

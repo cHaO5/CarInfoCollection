@@ -29,6 +29,7 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
+import com.saic.quentin.carinfocollection.commands.AmbientAirTemperatureObdCommand;
 import com.saic.quentin.carinfocollection.commands.ObdCommand;
 import com.saic.quentin.carinfocollection.commands.protocol.EchoOffObdCommand;
 import com.saic.quentin.carinfocollection.commands.protocol.LineFeedOffObdCommand;
@@ -117,7 +118,7 @@ public class ObdGatewayService extends Service {
 	}
 
 	private void startService() {
-		Log.d(TAG, "启动服务..");
+		Log.d(TAG, "Service start...");
 
 		/*
 		 * Retrieve preferences
@@ -135,7 +136,7 @@ public class ObdGatewayService extends Service {
 			        Toast.LENGTH_LONG).show();
 
 			// log error
-			Log.e(TAG, "未找到蓝牙设备");
+			Log.e(TAG, "No Bluetooth device selected");
 
 			// TODO kill this service gracefully
 			stopService();
@@ -162,7 +163,7 @@ public class ObdGatewayService extends Service {
 //		boolean gps = prefs.getBoolean(ConfigActivity.ENABLE_GPS_KEY, false);
 
 		/*
-		 * TODO clean
+		 * TODO 采样间隔未使用
 		 * 
 		 * Get more preferences
 		 */
@@ -188,7 +189,7 @@ public class ObdGatewayService extends Service {
 		 * http://developer.android.com/reference/android/bluetooth/BluetoothAdapter
 		 * .html#cancelDiscovery()
 		 */
-		Log.d(TAG, "停止蓝牙设备搜索");
+		Log.d(TAG, "Stop searching bth services");
 		btAdapter.cancelDiscovery();
 
 		Toast.makeText(this, "Starting OBD connection..", Toast.LENGTH_SHORT);
@@ -196,7 +197,7 @@ public class ObdGatewayService extends Service {
 		try {
 			startObdConnection();
 		} catch (Exception e) {
-			Log.e(TAG, "建立连接时出错 -> "
+			Log.e(TAG, "Errors when connecting -> "
 			        + e.getMessage());
 
 			// in case of failure, stop this service.
@@ -210,7 +211,7 @@ public class ObdGatewayService extends Service {
 	 * @throws java.io.IOException
 	 */
 	private void startObdConnection() throws IOException {
-		Log.d(TAG, "开始OBD连接..");
+		Log.d(TAG, "Start OBD connection...");
 
 		// Instantiate a BluetoothSocket for the remote device and connect it.
 //		_sock = _dev.createRfcommSocketToServiceRecord(MY_UUID);
@@ -260,11 +261,11 @@ public class ObdGatewayService extends Service {
 //			}
 //		}
 
-		Log.d(TAG, "下面开始连接sock..");
+		Log.d(TAG, "Now connecting sock..");
 		_sock.connect();
 
 		// Let's configure the connection.
-		Log.d(TAG, "配置连接任务排队..");
+		Log.d(TAG, "Configured connection task queue...");
 		queueJob(new ObdCommandJob(new ObdResetCommand()));
 		queueJob(new ObdCommandJob(new EchoOffObdCommand()));
 
@@ -283,9 +284,9 @@ public class ObdGatewayService extends Service {
 		        ObdProtocols.AUTO)));
 		
 		// Job for returning dummy data
-//		queueJob(new ObdCommandJob(new AmbientAirTemperatureObdCommand()));
+		queueJob(new ObdCommandJob(new AmbientAirTemperatureObdCommand()));
 
-		Log.d(TAG, "初始化任务队列.");
+		Log.d(TAG, "Initialize task queue.");
 
 		// Service is running..
 		_isRunning.set(true);
@@ -298,7 +299,7 @@ public class ObdGatewayService extends Service {
 	 * Runs the queue until the service is stopped
 	 */
 	private void _executeQueue() {
-		Log.d(TAG, "执行队列..");
+		Log.d(TAG, "Execute queue..");
 
 		_isQueueRunning.set(true);
 
